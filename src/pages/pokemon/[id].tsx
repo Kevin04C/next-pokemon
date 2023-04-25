@@ -6,12 +6,14 @@ import { localFavorites } from "@/utils";
 import confetti from "canvas-confetti";
 import { getPokemonInfo } from "@/utils";
 import { PokemonInfo } from "@/interfaces";
+import { useRouter } from "next/router";
 
 interface Props {
   pokemon: PokemonInfo;
 }
 
 const PokemonPage: FC<Props> = ({ pokemon }) => {
+  const router = useRouter();
   const [isInFavorites, setExistFavorites] = useState<boolean>(false);
 
   const onToggleFavorite = () => {
@@ -35,7 +37,7 @@ const PokemonPage: FC<Props> = ({ pokemon }) => {
   useEffect(() => {
     const exists = localFavorites.existsFavorites(pokemon.id);
     setExistFavorites(exists);
-  }, [pokemon.id]);
+  }, [pokemon]);
 
   return (
     <Layout title={pokemon.name}>
@@ -117,7 +119,7 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
     paths: pokemonsNumbers.map((id) => ({
       params: { id },
     })),
-    fallback: false,
+    fallback: 'blocking',
   };
 };
 
@@ -125,10 +127,20 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { id } = params as { id: string };
   const pokemon = await getPokemonInfo(id);
 
+  if (pokemon instanceof Error) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
   return {
     props: {
       pokemon,
     },
+    revalidate: 864000,
   };
 };
 
